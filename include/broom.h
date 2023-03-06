@@ -13,6 +13,7 @@
 #define BROOM_CONF_PATH     "conf/broom.ini"
 
 #include <netinet/ip.h>
+#include <iniparser.h>
 
 typedef unsigned char   u8;
 typedef unsigned short  u16;
@@ -26,10 +27,19 @@ struct broom_client_s {
 
 typedef struct broom_server_s broom_server_t;
 struct broom_server_s {
+    /** Server Attributes **/
+    const char  *bind;
+    int          port;
+
     int     sockfd;
     int     maxfd;
-    fd_set  rdset, tmp;
+    fd_set  rdset;
 
+    dictionary *dict;
+
+    /** Client Attributes **/
+    // 客户端数量
+    size_t          n_clients;
     broom_client_t *clients[BROOM_CLIENT_SIZE];
 };
 

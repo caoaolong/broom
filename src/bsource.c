@@ -7,6 +7,7 @@
 #include <bmodule.h>
 
 extern broom_module_t modules;
+extern broom_server_t server;
 
 void bsource_init()
 {
@@ -18,11 +19,15 @@ void bsource_init()
         perror("load failed");
         exit(1);
     }
+    server.dict = dict;
 
     broom_module_t *module;
     int nsec = iniparser_getnsec(dict);
     for (int i = 0; i < nsec; ++i) {
         const char *name = iniparser_getsecname(dict, i);
+        if (!strcasecmp(name, "server"))
+            continue;
+
         module = bmodule_get(name);
         if (!module) {
             fprintf(stderr, "unknown module name: %s\n", name);
