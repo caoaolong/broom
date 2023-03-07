@@ -12,3 +12,5 @@ aux_source_directory(src/lib/ini INI_LIB_ALL)
 
 add_executable(broom broom.c ${SRC_ALL} ${MODULE_ALL} ${INI_LIB_ALL})
 target_link_libraries(broom pthread)
+
+add_executable(bcli bcli.c)

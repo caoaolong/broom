@@ -7,6 +7,8 @@ broom_server_t server;
 
 int main() {
 
+    broom_init();
+
     bsource_init();
 
     const char *ip = iniparser_getstring(server.dict, "server:bind", "127.0.0.1");

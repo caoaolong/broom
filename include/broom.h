@@ -8,9 +8,11 @@
 #define BROOM_CLIENT_SIZE   0x3FF
 #define BROOM_PATH_SIZE     0xFF
 #define BROOM_BUFFER_SIZE   1500
+#define BROOM_MMAP_SIZE     0x2000
 
 #define BROOM_PREFIX        "./"
 #define BROOM_CONF_PATH     "conf/broom.ini"
+#define BROOM_DATA_PATH     "data/broom.brm"
 
 #include <netinet/ip.h>
 #include <iniparser.h>
@@ -27,6 +29,14 @@ struct broom_client_s {
 
 typedef struct broom_server_s broom_server_t;
 struct broom_server_s {
+    /** DataSource **/
+    int      srcfd;
+
+    /** Memory **/
+    int      memfd;
+    void    *mem;
+    ssize_t  sendsize;
+
     /** Server Attributes **/
     const char  *bind;
     int          port;
@@ -42,5 +52,7 @@ struct broom_server_s {
     size_t          n_clients;
     broom_client_t *clients[BROOM_CLIENT_SIZE];
 };
+
+void broom_init();
 
 #endif //BROOM_BROOM_H

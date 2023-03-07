@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sendfile.h>
 #include <pthread.h>
 
 extern broom_server_t server;
@@ -37,6 +38,7 @@ void bserver_init(const char *ip, int port)
 
     failed:
     perror("failed");
+    exit(1);
 }
 
 void bserver_start()
@@ -58,7 +60,6 @@ void bserver_start()
     while (1) {
         tmp = rdset;
         ret = select(server.maxfd + 1, tmp, NULL, NULL, NULL);
-        printf("Selecting ...%d\n", ret);
         if (ret == -1) {
             break;
         } else if (ret == 0) {
@@ -67,6 +68,7 @@ void bserver_start()
         if (ret > 0) {
             if (FD_ISSET(sockfd, tmp)) {
                 cfd = accept(sockfd, (struct sockaddr *)&cliaddr, &len);
+                printf("Accept Client: %d\n", cfd);
                 FD_SET(cfd, rdset);
                 server.maxfd = server.maxfd > cfd ? server.maxfd : cfd;
                 server.clients[cfd] = bserver_new_client(cfd, &cliaddr);
@@ -85,20 +87,25 @@ void *bserver_events(void *args)
     int ret;
     while (1) {
         tmp = &server.rdset;
-        printf("Waiting... %d\n", server.maxfd);
-        for (int i = server.sockfd + 1; i < server.maxfd; ++i) {
+        for (int i = 3; i <= server.maxfd; ++i) {
             if (FD_ISSET(i, tmp)) {
-                ret = (int)read(i, buffer, BROOM_BUFFER_SIZE);
-                if (ret == -1) {
-                    perror("read failed");
+                ret = (int)recv(i, buffer, BROOM_BUFFER_SIZE, 0);
+                if (ret == -1 && i != server.sockfd) {
+                    printf("%d\n", i);
                     pthread_exit(NULL);
                 } else if (ret == 0) {
                     close(i);
-                    FD_CLR(i, &server.rdset);
+                    FD_CLR(i, tmp);
                     bserver_del_client(i);
                 } else if (ret > 0) {
-                    printf("Message: %s\n", buffer);
-                    memset(buffer, 0, ret);
+                    if (i > server.sockfd) {
+                        printf("client send: %d\n", ret);
+                        send(server.srcfd, buffer, ret, 0);
+                        memset(buffer, 0, ret);
+                    } else if (i == server.srcfd) {
+                        printf("mysql send: %d\n", ret);
+                        send(i, buffer, ret, 0);
+                    }
                 }
             }
         }
@@ -111,8 +118,11 @@ broom_client_t *bserver_new_client(int fd, struct sockaddr_in *cliaddr)
     broom_client_t *client = server.clients[fd] = malloc(sizeof(broom_client_t));
     client->addr = malloc(sizeof(struct sockaddr_in));
     client->addr = cliaddr;
-
     server.n_clients ++;
+
+    // module_mysql_connect
+    sendfile(fd, server.memfd, NULL, server.sendsize);
+
     return client;
 }
 
