@@ -6,8 +6,8 @@
 #include <string.h>
 
 broom_module_t modules[] = {
-        {"mysql", 0, 0, module_mysql_init},
-        {NULL, 0, 0, NULL}
+        {"mysql", NULL, 0, module_mysql_init},
+        {NULL, NULL, 0, NULL}
 };
 
 broom_module_t *bmodule_get(const char *name)

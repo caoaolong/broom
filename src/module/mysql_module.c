@@ -8,18 +8,18 @@
 
 extern broom_server_t server;
 
-void module_mysql_init(dictionary *dict, broom_module_t *module)
+void module_mysql_init(broom_module_t *module)
 {
 
 }
 
-int module_mysql_connect(dictionary *dict)
+int module_mysql_connect()
 {
+    dictionary *dict = server.dict;
     const char *host = iniparser_getstring(dict, "mysql:host", "127.0.0.1");
     int port = iniparser_getint(dict, "mysql:port", 3306);
 
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    server.srcfd = fd;
     struct sockaddr_in saddr;
     saddr.sin_family = AF_INET;
     saddr.sin_port = htons(port);

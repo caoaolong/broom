@@ -3,6 +3,7 @@
 //
 #include <broom.h>
 #include <bserver.h>
+#include <bmodule.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
@@ -87,7 +88,7 @@ void *bserver_events(void *args)
     int ret;
     while (1) {
         tmp = &server.rdset;
-        for (int i = 3; i <= server.maxfd; ++i) {
+        for (int i = server.sockfd + 1; i <= server.maxfd; ++i) {
             if (FD_ISSET(i, tmp)) {
                 ret = (int)recv(i, buffer, BROOM_BUFFER_SIZE, 0);
                 if (ret == -1 && i != server.sockfd) {
@@ -98,14 +99,9 @@ void *bserver_events(void *args)
                     FD_CLR(i, tmp);
                     bserver_del_client(i);
                 } else if (ret > 0) {
-                    if (i > server.sockfd) {
-                        printf("client send: %d\n", ret);
-                        send(server.srcfd, buffer, ret, 0);
-                        memset(buffer, 0, ret);
-                    } else if (i == server.srcfd) {
-                        printf("mysql send: %d\n", ret);
-                        send(i, buffer, ret, 0);
-                    }
+                    broom_client_t *client = server.clients[i];
+
+                    printf("read data length: %d\n", ret);
                 }
             }
         }
@@ -118,11 +114,11 @@ broom_client_t *bserver_new_client(int fd, struct sockaddr_in *cliaddr)
     broom_client_t *client = server.clients[fd] = malloc(sizeof(broom_client_t));
     client->addr = malloc(sizeof(struct sockaddr_in));
     client->addr = cliaddr;
+    client->srcfd = module_mysql_connect();
     server.n_clients ++;
 
-    // module_mysql_connect
-    sendfile(fd, server.memfd, NULL, server.sendsize);
-
+    ssize_t size = sendfile(fd, server.memfd, NULL, server.sendsize);
+    printf("send data length: %zd\n", size);
     return client;
 }
 

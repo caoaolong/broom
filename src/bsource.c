@@ -33,8 +33,11 @@ void bsource_init()
             fprintf(stderr, "unknown module name: %s\n", name);
             exit(1);
         }
-        module->midx = i;
-        module->nkeys = iniparser_getsecnkeys(dict, name);
-        module->init_func(dict, module);
+        char key[64];
+        sprintf(key, "%s:host", name);
+        module->host = iniparser_getstring(dict, key, "127.0.0.1");
+        sprintf(key, "%s:port", name);
+        module->port = iniparser_getint(dict, key, 0);
+        module->init_func(module);
     }
 }

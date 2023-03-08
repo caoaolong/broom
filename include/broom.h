@@ -24,14 +24,12 @@ typedef unsigned long   u64;
 
 typedef struct broom_client_s broom_client_t;
 struct broom_client_s {
+    int     srcfd;
     struct sockaddr_in *addr;
 };
 
 typedef struct broom_server_s broom_server_t;
 struct broom_server_s {
-    /** DataSource **/
-    int      srcfd;
-
     /** Memory **/
     int      memfd;
     void    *mem;
@@ -45,6 +43,7 @@ struct broom_server_s {
     int     maxfd;
     fd_set  rdset;
 
+    /** Global Data **/
     dictionary *dict;
 
     /** Client Attributes **/
