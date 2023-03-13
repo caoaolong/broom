@@ -6,7 +6,7 @@
 #include <string.h>
 
 broom_module_t modules[] = {
-        {"mysql", NULL, 0, module_mysql_init},
+        {"mysql", NULL, 0, module_mysql_init, module_mysql_connect},
         {NULL, NULL, 0, NULL}
 };
 

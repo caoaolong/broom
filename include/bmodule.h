@@ -15,12 +15,13 @@ struct broom_module_s {
     int               port;
 
     void (*init_func)(broom_module_t *module);
+    int (*connect)(broom_module_t *module);
 };
 
 broom_module_t *bmodule_get(const char *name);
 
 void module_mysql_init(broom_module_t *module);
 
-int module_mysql_connect();
+int module_mysql_connect(broom_module_t *module);
 
 #endif //BROOM_BMODULE_H

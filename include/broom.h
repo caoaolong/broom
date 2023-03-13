@@ -25,23 +25,24 @@ typedef unsigned long   u64;
 typedef struct broom_client_s broom_client_t;
 struct broom_client_s {
     int     srcfd;
+    int     clifd;
+    int     memfd;
+    void   *mem;
+    ssize_t nsend;
+
     struct sockaddr_in *addr;
 };
 
 typedef struct broom_server_s broom_server_t;
 struct broom_server_s {
-    /** Memory **/
-    int      memfd;
-    void    *mem;
-    ssize_t  sendsize;
-
     /** Server Attributes **/
     const char  *bind;
     int          port;
+    const char  *def;
 
     int     sockfd;
-    int     maxfd;
-    fd_set  rdset;
+    int     maxcfd, maxsfd;
+    fd_set  cfdset, sfdset;
 
     /** Global Data **/
     dictionary *dict;
@@ -50,6 +51,7 @@ struct broom_server_s {
     // 客户端数量
     size_t          n_clients;
     broom_client_t *clients[BROOM_CLIENT_SIZE];
+    int             sources[BROOM_CLIENT_SIZE];
 };
 
 void broom_init();

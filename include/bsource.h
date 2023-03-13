@@ -16,4 +16,8 @@ struct broom_source_s {
 
 void bsource_init();
 
+void bsource_start();
+
+ssize_t bsource_write(broom_client_t *client, char *buffer, int length);
+
 #endif //BROOM_BSOURCE_H
