@@ -18,6 +18,7 @@ extern broom_server_t server;
 void bserver_init(const char *ip, int port, const char *def)
 {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    printf("Server Socket %d\n", sockfd);
     server.sockfd = server.maxcfd = sockfd;
 
     struct sockaddr_in saddr;
@@ -66,6 +67,7 @@ void bserver_start()
     while (1) {
         tmp = cfdset;
         ret = select(server.maxcfd + 1, tmp, NULL, NULL, NULL);
+        printf("select ret %d\n", ret);
         if (ret == -1) {
             break;
         } else if (ret == 0) {
@@ -74,10 +76,16 @@ void bserver_start()
         if (ret > 0) {
             if (FD_ISSET(sockfd, tmp)) {
                 cfd = accept(sockfd, (struct sockaddr *)&cliaddr, &len);
-                printf("Accept Client: %d\n", cfd);
                 FD_SET(cfd, cfdset);
                 server.maxcfd = server.maxcfd > cfd ? server.maxcfd : cfd;
-                server.clients[cfd] = bserver_new_client(cfd, &cliaddr);
+                broom_client_t *client = bserver_new_client(cfd, &cliaddr);
+                if (client) {
+                    printf("Accept client succeed: %d\n", cfd);
+                    server.clients[cfd] = client;
+                    server.n_clients ++;
+                } else {
+                    printf("Accept client failed: %d\n", cfd);
+                }
             }
         }
     }
@@ -96,16 +104,18 @@ void *bserver_events(void *args)
         for (int i = server.sockfd + 1; i <= server.maxcfd; ++i) {
             if (FD_ISSET(i, tmp)) {
                 ret = (int)recv(i, buffer, BROOM_BUFFER_SIZE, 0);
-                if (ret == -1 && i != server.sockfd) {
+                if (ret == -1) {
                     printf("client recv failed: %d\n", i);
                 } else if (ret == 0) {
+                    printf("client: server closed %d\n", i);
                     close(i);
                     FD_CLR(i, tmp);
                     bserver_del_client(i);
                 } else if (ret > 0) {
-                    // TODO: 收到客户端发送的数据，转发到服务器
                     broom_client_t *client = bserver_get_client(0, i);
-                    printf("read data length: %zd\n", bserver_write(client, buffer, ret));
+                    client->nsend = send(client->srcfd, buffer, ret, 0);
+                    printf("send to server %d (%zd bytes)\n", client->clifd, client->nsend);
+//                    printf("read data length: %zd\n", bserver_write(client, buffer, ret));
                 }
             }
         }
@@ -116,24 +126,20 @@ void *bserver_events(void *args)
 broom_client_t *bserver_new_client(int fd, struct sockaddr_in *cliaddr)
 {
     broom_module_t *module = bmodule_get(server.def);
-
-    broom_client_t *client = server.clients[fd] = malloc(sizeof(broom_client_t));
+    broom_client_t *client = malloc(sizeof(broom_client_t));
     client->clifd = fd;
     client->addr = malloc(sizeof(struct sockaddr_in));
     client->addr = cliaddr;
     client->srcfd = module->connect(module);
-    server.n_clients ++;
 
-    char buffer[BROOM_PATH_SIZE];
-    sprintf(buffer, "%s%s", BROOM_PREFIX, BROOM_DATA_PATH);
-    int mfd = open(buffer, O_RDWR | O_CREAT, 0644);
-    client->memfd = mfd;
-    ftruncate(mfd, BROOM_MMAP_SIZE);
-    client->mem = mmap(NULL, BROOM_MMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);;
-    if (!client->mem) {
-        perror("mmap failed");
-        exit(1);
+    pthread_attr_init(&client->attr);
+    int ret = pthread_create(&client->pthread, &client->attr, module->listen, client);
+    if (ret != 0) {
+        pthread_attr_destroy(&client->attr);
+        return NULL;
     }
+    pthread_detach(client->pthread);
+
     return client;
 }
 

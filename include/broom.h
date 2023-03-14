@@ -13,8 +13,10 @@
 #define BROOM_PREFIX        "./"
 #define BROOM_CONF_PATH     "conf/broom.ini"
 #define BROOM_DATA_PATH     "data/broom.brm"
+#define BROOM_LOG_PATH      "log/broom.log"
 
 #include <netinet/ip.h>
+#include <pthread.h>
 #include <iniparser.h>
 
 typedef unsigned char   u8;
@@ -29,6 +31,10 @@ struct broom_client_s {
     int     memfd;
     void   *mem;
     ssize_t nsend;
+
+    /** Pthread Attributes **/
+    pthread_attr_t attr;
+    pthread_t pthread;
 
     struct sockaddr_in *addr;
 };

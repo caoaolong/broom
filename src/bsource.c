@@ -46,41 +46,9 @@ void bsource_init()
     }
 }
 
-_Noreturn void *bsource_listen(void *args)
-{
-    char buffer[BROOM_BUFFER_SIZE];
-    memset(buffer, 0, BROOM_BUFFER_SIZE);
-
-    fd_set *tmp;
-    int ret;
-    while (1) {
-        tmp = &server.sfdset;
-        for (int i = server.sockfd + 1; i <= server.maxsfd; ++i) {
-            if (FD_ISSET(i, tmp)) {
-                ret = (int)recv(i, buffer, BROOM_BUFFER_SIZE, 0);
-                if (ret == -1 && i != server.sockfd) {
-                    printf("source recv failed: %d\n", i);
-                } else if (ret == 0) {
-                    close(i);
-                    FD_CLR(i, tmp);
-                } else if (ret > 0) {
-                    // 接收到服务器的数据，发送给客户端
-                    broom_client_t *client = bserver_get_client(i, 0);
-                    printf("read data length: %zd\n", bsource_write(client, buffer, ret));
-                }
-            }
-        }
-        sleep(1);
-    }
-}
-
 void bsource_start()
 {
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_t pthread;
-    pthread_create(&pthread, &attr, bsource_listen, NULL);
-    pthread_detach(pthread);
+
 }
 
 ssize_t bsource_write(broom_client_t *client, char *buffer, int length)

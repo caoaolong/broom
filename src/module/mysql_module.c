@@ -37,3 +37,25 @@ int module_mysql_connect(broom_module_t *module)
 
     return fd;
 }
+
+void *module_mysql_listen(void *client)
+{
+    char buffer[BROOM_BUFFER_SIZE];
+
+    broom_client_t *cli = (broom_client_t *)client;
+    ssize_t ret;
+    while (1) {
+        ret = recv(cli->srcfd, buffer, BROOM_BUFFER_SIZE, 0);
+        if (ret > 0) {
+            cli->nsend = send(cli->clifd, buffer, ret, 0);
+            printf("send to client %d (%zd bytes)\n", cli->clifd, cli->nsend);
+        } else if (ret == 0) {
+            printf("server: client closed\n");
+            close(cli->srcfd);
+            pthread_exit(NULL);
+        } else {
+            printf("server recv failed: %d\n", cli->srcfd);
+            pthread_exit(NULL);
+        }
+    }
+}

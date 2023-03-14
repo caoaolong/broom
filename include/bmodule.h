@@ -16,6 +16,7 @@ struct broom_module_s {
 
     void (*init_func)(broom_module_t *module);
     int (*connect)(broom_module_t *module);
+    void *(*listen)(void *client);
 };
 
 broom_module_t *bmodule_get(const char *name);
@@ -23,5 +24,7 @@ broom_module_t *bmodule_get(const char *name);
 void module_mysql_init(broom_module_t *module);
 
 int module_mysql_connect(broom_module_t *module);
+
+void *module_mysql_listen(void *client);
 
 #endif //BROOM_BMODULE_H
