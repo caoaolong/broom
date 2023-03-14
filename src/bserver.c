@@ -67,8 +67,8 @@ void bserver_start()
     while (1) {
         tmp = cfdset;
         ret = select(server.maxcfd + 1, tmp, NULL, NULL, NULL);
-        printf("select ret %d\n", ret);
         if (ret == -1) {
+            perror("select");
             break;
         } else if (ret == 0) {
             continue;
@@ -109,7 +109,7 @@ void *bserver_events(void *args)
                 } else if (ret == 0) {
                     printf("client: server closed %d\n", i);
                     close(i);
-                    FD_CLR(i, tmp);
+                    FD_CLR(i, &server.cfdset);
                     bserver_del_client(i);
                 } else if (ret > 0) {
                     broom_client_t *client = bserver_get_client(0, i);
@@ -167,6 +167,7 @@ void bserver_del_client(int fd)
         free(client);
     }
     server.n_clients --;
+    server.maxcfd --;
 }
 
 ssize_t bserver_write(broom_client_t *client, char *buffer, int length)
